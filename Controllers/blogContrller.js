@@ -2,63 +2,71 @@ import cloudinary from "cloudinary";
 import { Blogs } from "../Models/blogSchema.js";
 import cron from "node-cron";
 import { User } from "../Models/UserSchema.js";
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const uploadsFolder = path.join(__dirname, '../uploads'); // Uploads folder ka path
+const uploadsFolder = path.join(__dirname, "../uploads"); // Uploads folder ka path
 
 const deleteUploads = () => {
   fs.readdir(uploadsFolder, (err, files) => {
-      if (err) {
-          console.error('Error reading uploads directory:', err);
-          return;
-      }
+    if (err) {
+      console.error("Error reading uploads directory:", err);
+      return;
+    }
 
-      files.forEach(file => {
-          const filePath = path.join(uploadsFolder, file);
-          fs.unlink(filePath, (err) => {
-              if (err) {
-                  console.error(`Error deleting file ${filePath}:`, err);
-              } else {
-                  console.log(`Deleted file: ${filePath}`);
-              }
-          });
+    files.forEach((file) => {
+      const filePath = path.join(uploadsFolder, file);
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(`Error deleting file ${filePath}:`, err);
+        } else {
+          console.log(`Deleted file: ${filePath}`);
+        }
       });
+    });
   });
 };
 
 export const blogPost = async (req, res) => {
   try {
-    
+    // Cloudinary Config
     cloudinary.config({
       cloud_name: process.env.CLUDENAME,
       api_key: process.env.ALUDEAPI_KEY,
       api_secret: process.env.CLUDE_SECRET,
     });
- 
 
     const { mainImg, paraOneImg, paraTwoImg, paraThreeImg } = req.files;
-    deleteUploads();
-    if (!mainImg) {
-      return res.status(400).json({ message: "Blog Main image is required " });
-    }
-    if (!mainImg) {
-      return res.status(400).json({ message: "Blog Main image is required" });
-    }
-    const allowedFormat = ["image/jpg", "image/png", "image/jpeg"];
 
-    if (
-      !allowedFormat.includes(mainImg[0].mimetype) ||
-      (paraOneImg && !allowedFormat.includes(paraOneImg[0].mimetype)) ||
-      (paraTwoImg && !allowedFormat.includes(paraTwoImg[0].mimetype)) ||
-      (paraThreeImg && !allowedFormat.includes(paraThreeImg[0].mimetype))
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Invalid file Type , only JPG , PNG" });
+    // Server Folder Cleanup (Agar Required Ho)
+    deleteUploads();
+
+    if (!mainImg) {
+      return res.status(400).json({ message: "Blog Main Image is required" });
+    }
+
+    const allowedFormats = [
+      "image/jpg",
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ];
+
+    const allImages = [mainImg, paraOneImg, paraTwoImg, paraThreeImg].filter(
+      Boolean
+    );
+
+    for (const img of allImages) {
+      if (img && !allowedFormats.includes(img[0].mimetype)) {
+        return res
+          .status(400)
+          .json({
+            message: "Invalid file type, only JPG, PNG, JPEG, WEBP allowed",
+          });
+      }
     }
 
     const {
@@ -75,108 +83,85 @@ export const blogPost = async (req, res) => {
       ShudulingDate,
     } = req.body;
 
-    const createdBy = req.user._id;
-    const authorName = req.user.name;
-    const authorAvtar = req.user.avatar.url;
-
-    // created by is pannding
-
-    //catagory is missing
+    
     if (!title || !introContent) {
-      return res.status(400).json({ message: "Title into is required feld" });
+      return res
+        .status(400)
+        .json({ message: "Title and intro content are required" });
     }
 
+    // Cloudinary Upload Function
+    const cloudinaryUpload = (file) => {
+      return cloudinary.uploader.upload(file.path, {
+        resource_type: "image",
+        folder: "blog_images",
+        quality: "auto:good",
+        format: "webp",
+      });
+    };
+
+    // Upload Images in Parallel
     const uploadPromises = [
-      cloudinary.uploader.upload(mainImg[0].path),
-      paraOneImg
-        ? cloudinary.uploader.upload(paraOneImg[0].path)
-        : Promise.resolve(null),
-      paraTwoImg
-        ? cloudinary.uploader.upload(paraTwoImg[0].path)
-        : Promise.resolve(null),
-      paraThreeImg
-        ? cloudinary.uploader.upload(paraThreeImg[0].path)
-        : Promise.resolve(null),
+      cloudinaryUpload(mainImg[0]),
+      paraOneImg ? cloudinaryUpload(paraOneImg[0]) : Promise.resolve(null),
+      paraTwoImg ? cloudinaryUpload(paraTwoImg[0]) : Promise.resolve(null),
+      paraThreeImg ? cloudinaryUpload(paraThreeImg[0]) : Promise.resolve(null),
     ];
 
     const [mainImgRes, paraOneImgRes, paraTwoImgRes, paraThreeImgRes] =
       await Promise.all(uploadPromises);
 
-    // if (
-    //   !mainImgRes || mainImgRes.error ||
-    //   (!paraOneImg && (!paraOneImgRes || paraOneImgRes.error)) ||
-    //   (!paraTwoImg && (!paraTwoImgRes || paraTwoImgRes.error)) ||
-    //   (!paraThreeImg && (!paraOneImgRes || paraThreeImgRes.error))
-    // ) {
-
-    // }
-    if (
-      !mainImgRes ||
-      mainImgRes.error ||
-      (paraOneImg && (!paraOneImgRes || paraOneImgRes.error)) ||
-      (paraTwoImg && (!paraTwoImgRes || paraTwoImgRes.error)) ||
-      (paraThreeImg && (!paraThreeImgRes || paraThreeImgRes.error))
-    ) {
-      return res
-
-        .status(500)
-        .json({ message: "Error occured while uploading one more images" });
+    // Handle Upload Errors
+    if (!mainImgRes || mainImgRes.error) {
+      return res.status(500).json({ message: "Error uploading main image" });
     }
+
     const blogData = {
       title,
       introContent,
-      paraOneContent,
       category,
       paraOneTitle,
-      paraTwoContent,
+      paraOneContent,
       paraTwoTitle,
+      paraTwoContent,
       paraThreeTitle,
       paraThreeContent,
-      createdBy,
-      authorName,
+      createdBy: req.user._id,
+      authorName: req.user.name,
+      authorAvatar: req.user.avatar?.url,
       published,
       ShudulingDate,
-      mainImg: {
-        public_id: mainImgRes.public_id,
-        url: mainImgRes.secure_url,
-      },
+      mainImg: { public_id: mainImgRes.public_id, url: mainImgRes.secure_url },
     };
-    if (paraOneImg) {
+
+    if (paraOneImgRes)
       blogData.paraOneImg = {
         public_id: paraOneImgRes.public_id,
         url: paraOneImgRes.secure_url,
       };
-    }
-    if (paraTwoImg) {
+    if (paraTwoImgRes)
       blogData.paraTwoImg = {
         public_id: paraTwoImgRes.public_id,
         url: paraTwoImgRes.secure_url,
       };
-    }
-    if (paraThreeImg) {
+    if (paraThreeImgRes)
       blogData.paraThreeImg = {
         public_id: paraThreeImgRes.public_id,
         url: paraThreeImgRes.secure_url,
       };
-    }
+
     const blog = await Blogs.create(blogData);
+
     if (blog) {
-      return res.status(200).json({ message: "Blog is Created" });
+      return res
+        .status(200)
+        .json({ message: "Blog Created Successfully", blog });
+    } else {
+      return res.status(400).json({ message: "Blog creation failed" });
     }
-    res.status(400).json({ message: "blog is note Created" });
-    console.log("hello");
-    
-
   } catch (error) {
-    console.log(error);
-
-    const cludeError = error.error.code;
-    if (cludeError) {
-      return res.status(501).json({ message: "Not Connected To Internate" });
-    }
-
-    // res.status(402).json({ message: error.errors.title.properties.message });
-    res.status(402).json({ message: error._message });
+    console.error("Error creating blog:", error);
+    return res.status(500).json({ message: "Internal Server Error", error });
   }
 };
 
@@ -354,7 +339,7 @@ export const reportBlogs = async (req, res) => {
     const blogId = req.params.id;
     const user = req.user;
     const blog = await Blogs.findById(blogId);
-    
+
     if (!blog) {
       res.status(404).json({ message: "Post not Found" });
     }
@@ -363,15 +348,18 @@ export const reportBlogs = async (req, res) => {
         .status(400)
         .json({ message: "You have already reported this post" });
     }
-    await Blogs.findByIdAndUpdate({_id:blogId},{$push:{report:user._id}});
+    await Blogs.findByIdAndUpdate(
+      { _id: blogId },
+      { $push: { report: user._id } }
+    );
     console.log("hello");
-    
+
     // const reportBlogUpdate = await Blogs.updateOne(
     //   { _id: blogId },
     //   { report: blog.report.length + 1 || 1 }
     // );
     const targetBlog = await Blogs.findById(blogId);
-    
+
     if (targetBlog.report.length === 3) {
       await Blogs.updateOne({ _id: blogId }, { Status: 2 });
       return res.status(200).json({ message: "This Post Is Bloked" });
