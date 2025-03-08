@@ -2,16 +2,46 @@ import cloudinary from "cloudinary";
 import { Blogs } from "../Models/blogSchema.js";
 import cron from "node-cron";
 import { User } from "../Models/UserSchema.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadsFolder = path.join(__dirname, '../uploads'); // Uploads folder ka path
+
+const deleteUploads = () => {
+  fs.readdir(uploadsFolder, (err, files) => {
+      if (err) {
+          console.error('Error reading uploads directory:', err);
+          return;
+      }
+
+      files.forEach(file => {
+          const filePath = path.join(uploadsFolder, file);
+          fs.unlink(filePath, (err) => {
+              if (err) {
+                  console.error(`Error deleting file ${filePath}:`, err);
+              } else {
+                  console.log(`Deleted file: ${filePath}`);
+              }
+          });
+      });
+  });
+};
+
 export const blogPost = async (req, res) => {
   try {
+    
     cloudinary.config({
       cloud_name: process.env.CLUDENAME,
       api_key: process.env.ALUDEAPI_KEY,
       api_secret: process.env.CLUDE_SECRET,
     });
+ 
 
     const { mainImg, paraOneImg, paraTwoImg, paraThreeImg } = req.files;
-
+    deleteUploads();
     if (!mainImg) {
       return res.status(400).json({ message: "Blog Main image is required " });
     }
@@ -92,7 +122,6 @@ export const blogPost = async (req, res) => {
         .status(500)
         .json({ message: "Error occured while uploading one more images" });
     }
-
     const blogData = {
       title,
       introContent,
@@ -135,6 +164,9 @@ export const blogPost = async (req, res) => {
       return res.status(200).json({ message: "Blog is Created" });
     }
     res.status(400).json({ message: "blog is note Created" });
+    console.log("hello");
+    
+
   } catch (error) {
     console.log(error);
 
