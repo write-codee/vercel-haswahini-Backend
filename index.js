@@ -5,6 +5,15 @@ import DbConnection from "./Utils/db.js";
 import userRouter from "./Routes/userRouter.js";
 import postRouter from "./Routes/BlogsRoutes.js";
 import AdminRoutes from "./Routes/AdminRoutes.js";
+import fs from "fs";
+import path from "path";
+
+const uploadDir = path.join(__dirname, "uploads");
+
+// Agar folder exist nahi karta to bana do
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 dotenv.config();
 const app = express();
