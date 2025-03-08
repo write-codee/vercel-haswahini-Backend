@@ -61,11 +61,9 @@ export const blogPost = async (req, res) => {
 
     for (const img of allImages) {
       if (img && !allowedFormats.includes(img[0].mimetype)) {
-        return res
-          .status(400)
-          .json({
-            message: "Invalid file type, only JPG, PNG, JPEG, WEBP allowed",
-          });
+        return res.status(400).json({
+          message: "Invalid file type, only JPG, PNG, JPEG, WEBP allowed",
+        });
       }
     }
 
@@ -83,7 +81,6 @@ export const blogPost = async (req, res) => {
       ShudulingDate,
     } = req.body;
 
-    
     if (!title || !introContent) {
       return res
         .status(400)
@@ -384,24 +381,58 @@ export const reportBlogs = async (req, res) => {
     console.log(error);
   }
 };
+// cron.schedule("* * * * *", async () => {
+//   const currentDate = new Date();
+
+//   try {
+//     // Fetch posts with status 'draft' and publish date <= current date
+//     const postsToPublish = await Blogs.find({
+//       ShudulingDate: { $lte: currentDate },
+//     });
+
+//     // Update each post's status to 'published'
+
+//     postsToPublish.forEach(async (Blogs) => {
+//       Blogs.published = true;
+//       await Blogs.save();
+//     });
+
+//     await Blogs.updateOne({ _id: postsToPublish._id }, { published: true });
+//   } catch (error) {
+//     console.error("Error scheduling posts:", error);
+//   }
+// });
+const cron = require("node-cron");
+const Blogs = require("./models/Blogs"); // Check if path is correct
+
 cron.schedule("* * * * *", async () => {
-  const currentDate = new Date();
-
   try {
-    // Fetch posts with status 'draft' and publish date <= current date
+    console.log("🔄 Running Scheduled Job at:", new Date().toISOString());
+
+    // Fetch all blogs that need to be published
     const postsToPublish = await Blogs.find({
-      ShudulingDate: { $lte: currentDate },
+      published: false, // Ensure only unpublished blogs are fetched
+      ShudulingDate: { $lte: new Date() },
     });
 
-    // Update each post's status to 'published'
+    if (postsToPublish.length === 0) {
+      console.log("✅ No Scheduled Posts to Publish.");
+      return;
+    }
 
-    postsToPublish.forEach(async (Blogs) => {
-      Blogs.published = true;
-      await Blogs.save();
-    });
+    // Use bulkWrite for efficiency
+    const bulkOps = postsToPublish.map((post) => ({
+      updateOne: {
+        filter: { _id: post._id },
+        update: { $set: { published: true } },
+      },
+    }));
 
-    await Blogs.updateOne({ _id: postsToPublish._id }, { published: true });
+    // Execute bulk update
+    await Blogs.bulkWrite(bulkOps);
+
+    console.log(`✅ Successfully Published ${postsToPublish.length} Posts`);
   } catch (error) {
-    console.error("Error scheduling posts:", error);
+    console.error("❌ Error scheduling posts:", error);
   }
 });
