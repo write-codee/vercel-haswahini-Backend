@@ -91,7 +91,6 @@ export const blogPost = async (req, res) => {
     const cloudinaryUpload = (file) => {
       return cloudinary.uploader.upload(file.path, {
         resource_type: "image",
-        folder: "blog_images",
         quality: "auto:good",
         format: "webp",
       });
@@ -402,7 +401,6 @@ export const reportBlogs = async (req, res) => {
 //     console.error("Error scheduling posts:", error);
 //   }
 // });
-const Blogs = require("./models/Blogs"); // Check if path is correct
 
 cron.schedule("* * * * *", async () => {
   try {
