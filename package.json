@@ -4,9 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-  "start": "node index.js &",
-  "build": "echo 'Skipping build step'",
-  "postinstall": "npm install"
+  "start": "node index.js"
 },
   "engines": {
     "node": "18.x"
