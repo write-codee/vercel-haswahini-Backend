@@ -402,7 +402,6 @@ export const reportBlogs = async (req, res) => {
 //     console.error("Error scheduling posts:", error);
 //   }
 // });
-const cron = require("node-cron");
 const Blogs = require("./models/Blogs"); // Check if path is correct
 
 cron.schedule("* * * * *", async () => {
