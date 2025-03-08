@@ -24,3 +24,8 @@ const PORT = process.env.PORT ;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+process.on('SIGTERM', () => {
+    console.log("Process terminated!");
+    process.exit(0);
+  });
+  
