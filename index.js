@@ -13,6 +13,10 @@ app.use(express.json());
 app.use("/api", userRouter);
 app.use("/api/blog", postRouter);
 app.use("/api/admin",AdminRoutes);
+app.get("/",(req,res)=>
+{
+        res.send("hello prshant");
+})
 
 DbConnection();
 
