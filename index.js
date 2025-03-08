@@ -6,8 +6,10 @@ import userRouter from "./Routes/userRouter.js";
 import postRouter from "./Routes/BlogsRoutes.js";
 import AdminRoutes from "./Routes/AdminRoutes.js";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import path from "path";
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const uploadDir = path.join(__dirname, "uploads");
 
 // Agar folder exist nahi karta to bana do
