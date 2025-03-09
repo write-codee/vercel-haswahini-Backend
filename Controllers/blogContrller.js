@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const uploadsFolder = path.join(__dirname, "../uploads"); // Uploads folder ka path
 
-const deleteUploads = () => {
+export const deleteUploads = () => {
   fs.readdir(uploadsFolder, (err, files) => {
     if (err) {
       console.error("Error reading uploads directory:", err);

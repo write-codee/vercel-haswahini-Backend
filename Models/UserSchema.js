@@ -7,11 +7,11 @@ const userSchema = new mongoose.Schema({
     minLength: [3, "Name must contain at least 3 character"],
     maxLength: [32, "Name cannot exced 32 character"],
   },
-  username:{
-    type:String,
-    required:true,
-    unique:true,
-    trim: true
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
   },
   email: {
     type: String,
@@ -21,8 +21,8 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: true,
-    minLength:10,
-    maxLength:10,
+    minLength: 10,
+    maxLength: 10,
     trim: true,
   },
   avatar: {
@@ -31,6 +31,8 @@ const userSchema = new mongoose.Schema({
     },
     url: {
       type: String,
+      default:
+        "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
     },
   },
   role: {

@@ -1,6 +1,14 @@
 import { Blogs } from "../Models/blogSchema.js";
 import { User } from "../Models/UserSchema.js";
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { deleteUploads } from "./blogContrller.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+const uploadsFolder = path.join(__dirname, "../uploads"); // Uploads folder ka path
 export const AGetAllUser = async (req, res) => {
   try {
     const alluser = await User.find({ role: { $ne: "Admin" } }).sort({
@@ -13,12 +21,40 @@ export const AGetAllUser = async (req, res) => {
 };
 export const updateUser = async (req, res) => {
   try {
+    cloudinary.config({
+      cloud_name: process.env.CLUDENAME,
+      api_key: process.env.ALUDEAPI_KEY,
+      api_secret: process.env.CLUDE_SECRET,
+    });
+
     const { id } = req.params;
     const { name, username, email, phone, role } = req.body;
 
+    const upDatedData = {
+      name,
+      username,
+      email,
+      phone,
+      role,
+    };
+
+    if (req.file) {
+      deleteUploads();
+      const filePath = req.file.path;
+      const response = await cloudinary.uploader.upload(filePath, {
+        folder: "profile_pictures",
+      });
+      upDatedData.avatar = {
+        public_id: response.public_id,
+        url: response.secure_url,
+      };
+    }
+
     const updateData = await User.updateOne(
       { _id: id },
-      { $set: { name, email, role, phone } }
+      {
+        $set: upDatedData,
+      }
     );
     if (updateData.modifiedCount > 0) {
       return res.json({ message: "Updated" });
