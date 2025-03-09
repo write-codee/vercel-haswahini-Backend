@@ -91,6 +91,7 @@ export const blogPost = async (req, res) => {
     const cloudinaryUpload = (file) => {
       return cloudinary.uploader.upload(file.path, {
         resource_type: "image",
+        folder: "Blogs_Image",
         quality: "auto:good",
         format: "webp",
       });
@@ -157,7 +158,9 @@ export const blogPost = async (req, res) => {
     }
   } catch (error) {
     console.error("Error creating blog:", error);
-    return res.status(500).json({ message: "Internal Server Error", error });
+    return res
+      .status(500)
+      .json({ message: `Internal Server Error ${error.message}`, error });
   }
 };
 
