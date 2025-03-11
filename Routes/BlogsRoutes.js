@@ -7,6 +7,7 @@ import {
   getOneBlogs,
   MessageSending,
   reportBlogs,
+  ResentBlog,
   updateBlogs,
 } from "../Controllers/blogContrller.js";
 import { AuthCheck } from "../Middlewares/Auth.js";
@@ -43,4 +44,5 @@ router.route("/updateBlog/:id").put(
 );
 router.route("/messageSending").get(AuthCheck,isAutheryjestion,MessageSending)
 router.route("/blogReport/:id").put(AuthCheck,reportBlogs)
+router.get("/resentBlogs",ResentBlog)
 export default router;

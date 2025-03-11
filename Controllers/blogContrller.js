@@ -29,7 +29,18 @@ export const deleteUploads = () => {
     });
   });
 };
-
+export const ResentBlog = async (req,res) => {
+  try {
+    
+    const Resent5Blog = await Blogs.find().limit(5);
+    if (!Resent5Blog) {
+      return res.status(404).json({ message: "Blog Not Found" });
+    }
+    res.status(200).json(Resent5Blog);
+  } catch (error) {
+    console.log(error);
+  }
+};
 export const blogPost = async (req, res) => {
   try {
     // Cloudinary Config
@@ -407,7 +418,7 @@ export const reportBlogs = async (req, res) => {
 
 cron.schedule("* * * * *", async () => {
   try {
-    console.log("🔄 Running Scheduled Job at:", new Date().toISOString());
+    // console.log("🔄 Running Scheduled Job at:", new Date().toISOString());
 
     // Fetch all blogs that need to be published
     const postsToPublish = await Blogs.find({
@@ -416,7 +427,7 @@ cron.schedule("* * * * *", async () => {
     });
 
     if (postsToPublish.length === 0) {
-      console.log("✅ No Scheduled Posts to Publish.");
+      // console.log("✅ No Scheduled Posts to Publish.");
       return;
     }
 
